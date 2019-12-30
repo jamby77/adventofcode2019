@@ -18,10 +18,6 @@ function isValid(num) {
     if (a === b && a !== c && b !== d) {
       same = true; // has at least 2 adjacent digits same
     }
-    // if (same && c !== false && c === a) {
-    //   console.log(i, c);
-    //   same = false;
-    // }
   }
   return same && increase;
 }

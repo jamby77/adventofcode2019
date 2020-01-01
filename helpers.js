@@ -1,3 +1,7 @@
+// if (!require) {
+//   function require() {}
+// }
+// const module = {};
 const fs = require("fs");
 
 function readDataToString(fileName) {
@@ -71,7 +75,7 @@ function parseOpcode(code, idx) {
   return { op, param1, param2, param3, step, idx };
 }
 
-function run(commands, input) {
+function run(commands, ...inputs) {
   function getInt(idx) {
     return parseInt(commands[idx]);
   }
@@ -125,7 +129,8 @@ function run(commands, input) {
         commands[dest1] = val1 === val2 ? 1 : 0;
         break;
       case ocIn:
-        val1 = input; // only input is 1
+        const input = inputs.shift();
+        val1 = input;
         dest1 = getInt(i + 1);
         commands[dest1] = val1;
         break;
@@ -159,4 +164,74 @@ function run(commands, input) {
     }
   }
 }
-module.exports = { readDataToString, parseOpcode, Op, run };
+
+function permutationsWithRepetition(src = [], len = 1) {
+  const K = len - 1,
+    N = src.length;
+
+  let n = 0,
+    stack = [],
+    out = [],
+    k = 0;
+  function next() {
+    while (true) {
+      while (n < src.length) {
+        out[k] = src[n++];
+        if (k == K) {
+          return out.slice(0);
+        } else {
+          if (n < src.length) {
+            stack.push(k);
+            stack.push(n);
+          }
+          k++;
+          n = 0;
+        }
+      }
+      if (stack.length == 0) break;
+
+      n = stack.pop();
+      k = stack.pop();
+    }
+    return false;
+  }
+
+  function rewind() {
+    k = 0;
+    n = 0;
+    out = [];
+    stack = [];
+  }
+
+  function each(cb) {
+    rewind();
+    let v;
+    while ((v = next())) if (cb(v) === false) return;
+  }
+
+  return {
+    next,
+    each,
+    rewind
+  };
+}
+
+function permutationsWithoutRepetition(src = [], len = 1) {
+  const result = [];
+  const perms = permutationsWithRepetition(src, len);
+  perms.each(function(permutation) {
+    const set = new Set(permutation);
+    if (set.size === permutation.length) {
+      result.push(permutation);
+    }
+  });
+  return result;
+}
+
+module.exports = {
+  readDataToString,
+  parseOpcode,
+  Op,
+  run,
+  permutationsWithoutRepetition
+};

@@ -1,4 +1,4 @@
-const { readDataToString } = require("./readData");
+const { readDataToString } = require("./helpers");
 const data = readDataToString("data2.txt");
 const program = data.split(",");
 program[1] = 12;

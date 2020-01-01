@@ -1,4 +1,4 @@
-const { readDataToString } = require("./readData");
+const { readDataToString } = require("./helpers");
 const data = readDataToString("data3.txt").split("\n");
 
 const wire1 = data[0].split(",");

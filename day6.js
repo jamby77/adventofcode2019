@@ -1,4 +1,4 @@
-const { readDataToString } = require("./readData");
+const { readDataToString } = require("./helpers");
 const data = readDataToString("day6data.txt");
 
 const input = data

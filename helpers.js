@@ -75,7 +75,7 @@ function parseOpcode(code, idx) {
   return { op, param1, param2, param3, step, idx };
 }
 
-function run(commands, ...inputs) {
+function run(commands, idx = 0, ...inputs) {
   function getInt(idx) {
     return parseInt(commands[idx]);
   }
@@ -96,7 +96,7 @@ function run(commands, ...inputs) {
   let result;
   let store;
   let output;
-  for (let i = 0; i < commands.length; ) {
+  for (let i = idx; i < commands.length; ) {
     let movePointer = true;
     const code = commands[i];
     const parsed = parseOpcode(code, i);
@@ -130,6 +130,9 @@ function run(commands, ...inputs) {
         break;
       case ocIn:
         const input = inputs.shift();
+        if (typeof input === "undefined") {
+          return [output, i];
+        }
         val1 = input;
         dest1 = getInt(i + 1);
         commands[dest1] = val1;
@@ -153,10 +156,10 @@ function run(commands, ...inputs) {
         commands[store] = result;
         break;
       case ocHalt:
-        console.log("Halt!");
-        return output;
+        // console.log("Halt!");
+        return [output, -1];
       default:
-        console.log("Unknown operation");
+        console.log(`Unknown operation: ${op}`);
         break;
     }
     if (movePointer) {

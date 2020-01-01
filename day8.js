@@ -19,6 +19,7 @@ const image = rawImageData.reduce((acc, current, idx) => {
   return acc;
 }, []);
 
+// part 1
 let numZeros = l,
   product;
 
@@ -33,3 +34,34 @@ image.forEach(row => {
 });
 
 console.log(product);
+
+// part 2
+
+const flatImage = Array(l);
+
+// fill in the pixels in the flat image layer
+for (let i = 0; i < l; i++) {
+  for (let j = 0; j < image.length; j++) {
+    // get the pixel at pos #I in layer #J
+    const pixel = image[j][i];
+    if (pixel === 1 || pixel === 0) {
+      flatImage[i] = pixel;
+      break;
+    }
+  }
+  if (flatImage[i] === undefined) {
+    flatImage[i] = 2;
+  }
+}
+
+let imageText = "".padStart(w + 1, "*");
+for (let i = 0; i < l; i++) {
+  const pixel = flatImage[i];
+  if (i % w === 0) {
+    imageText += "*\n*";
+  }
+  imageText += pixel === 0 ? "*" : " ";
+}
+imageText += "\n" + "".padStart(w + 1, "*");
+
+console.log(imageText);

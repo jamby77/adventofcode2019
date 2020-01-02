@@ -12,42 +12,48 @@ function readDataToString(fileName) {
 }
 
 const ocAdd = 1;
-const ocAddLen = 4;
 const ocMul = 2;
-const ocMulLen = 4;
 const ocIn = 3;
-const ocInLen = 2;
 const ocOut = 4;
-const ocOutLen = 2;
-const ocHalt = 99;
-const parModePos = 0;
-const parModeImm = 1;
 const ocJumpTrue = 5;
 const ocJumpFalse = 6;
 const ocLessThan = 7;
-const ocLessThanLen = 4;
 const ocEquals = 8;
+const ocBase = 9;
+const ocHalt = 99;
+
+const ocInLen = 2;
+const ocOutLen = 2;
+const ocAddLen = 4;
+const ocMulLen = 4;
+const ocLessThanLen = 4;
 const ocEqualsLen = 4;
 const ocJumpFalseLen = 3;
 
+const parModePos = 0;
+const parModeImm = 1;
+const parModeRel = 2;
+
 const Op = {
   ocAdd,
-  ocAddLen,
   ocMul,
-  ocMulLen,
   ocIn,
-  ocInLen,
   ocOut,
-  ocOutLen,
   ocHalt,
-  parModePos,
-  parModeImm,
   ocJumpFalse,
   ocJumpTrue,
   ocLessThan,
   ocEquals,
+  ocBase,
+  ocAddLen,
+  ocMulLen,
+  ocInLen,
+  ocOutLen,
   ocLessThanLen,
-  ocEqualsLen
+  ocEqualsLen,
+  parModePos,
+  parModeImm,
+  parModeRel
 };
 
 function parseOpcode(code, idx) {
@@ -61,6 +67,7 @@ function parseOpcode(code, idx) {
   switch (op) {
     case ocIn:
     case ocOut:
+    case ocBase:
       step = ocInLen;
       break;
     case ocJumpTrue:
@@ -76,32 +83,58 @@ function parseOpcode(code, idx) {
 }
 
 function run(commands, idx = 0, ...inputs) {
-  function getInt(idx) {
-    return parseInt(commands[idx]);
-  }
-
-  function getVal(mode = 0, fromIndex = 0, step = 1) {
-    let val, dest;
-    if (mode === Op.parModeImm) {
-      val = getInt(fromIndex + step);
-    } else {
-      dest = getInt(fromIndex + step);
-      val = getInt(dest);
-    }
-    return val;
-  }
+  let relativeBase = 0;
   let val1;
   let val2;
   let dest1;
   let result;
   let store;
   let output;
+  function getInt(idx) {
+    return parseInt(commands[idx] || 0);
+  }
+
+  function getVal(mode = 0, fromIndex = 0, step = 1) {
+    let val, dest;
+    if (mode === Op.parModeImm) {
+      val = getInt(fromIndex + step);
+    } else if (mode === Op.parModeRel) {
+      dest = relativeBase + getInt(fromIndex + step);
+      val = getInt(dest);
+    } else {
+      dest = getInt(fromIndex + step);
+      val = getInt(dest);
+    }
+    return val;
+  }
+
+  function getDest(mode = 0, fromIndex = 0, step = 1) {
+    let dest;
+    if (mode === Op.parModeRel) {
+      dest = relativeBase + getInt(fromIndex + step);
+    } else {
+      dest = getInt(fromIndex + step);
+    }
+    return dest;
+  }
+
+  function setVal(pos, value) {
+    while (commands.length < pos) {
+      commands.push(0);
+    }
+    commands[pos] = value;
+  }
+
   for (let i = idx; i < commands.length; ) {
     let movePointer = true;
     const code = commands[i];
     const parsed = parseOpcode(code, i);
-    const { op, step, param1, param2 } = parsed;
+    const { op, step, param1, param2, param3 } = parsed;
     switch (op) {
+      case ocBase:
+        val1 = getVal(param1, i, 1);
+        relativeBase = relativeBase + val1;
+        break;
       case ocJumpTrue:
         val1 = getVal(param1, i, 1);
         if (val1 !== 0) {
@@ -119,14 +152,14 @@ function run(commands, idx = 0, ...inputs) {
       case ocLessThan:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
-        dest1 = getInt(i + 3);
-        commands[dest1] = val1 < val2 ? 1 : 0;
+        dest1 = getDest(param3, i, 3);
+        setVal(dest1, val1 < val2 ? 1 : 0);
         break;
       case ocEquals:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
-        dest1 = getInt(i + 3);
-        commands[dest1] = val1 === val2 ? 1 : 0;
+        dest1 = getDest(param3, i, 3);
+        setVal(dest1, val1 === val2 ? 1 : 0);
         break;
       case ocIn:
         const input = inputs.shift();
@@ -134,26 +167,26 @@ function run(commands, idx = 0, ...inputs) {
           return [output, i];
         }
         val1 = input;
-        dest1 = getInt(i + 1);
-        commands[dest1] = val1;
+        dest1 = getDest(param1, i, 1);
+        setVal(dest1, val1);
         break;
       case ocOut:
         output = getVal(param1, i, 1);
-        // console.log(output);
+        console.log(output);
         break;
       case ocAdd:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
         result = val1 + val2;
-        store = getInt(i + 3);
-        commands[store] = result;
+        store = getDest(param3, i, 3);
+        setVal(store, result);
         break;
       case ocMul:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
         result = val1 * val2;
-        store = getInt(i + 3);
-        commands[store] = result;
+        store = getDest(param3, i, 3);
+        setVal(store, result);
         break;
       case ocHalt:
         // console.log("Halt!");

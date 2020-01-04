@@ -82,14 +82,18 @@ function parseOpcode(code, idx) {
   return { op, param1, param2, param3, step, idx };
 }
 
-function run(commands, idx = 0, ...inputs) {
+function intComp(inputProgram = []) {
+  const commands = [...inputProgram];
   let relativeBase = 0;
+  let i = 0;
   let val1;
   let val2;
-  let dest1;
+  let writeToIdx;
   let result;
   let store;
   let output;
+  let _input;
+
   function getInt(idx) {
     return parseInt(commands[idx] || 0);
   }
@@ -125,7 +129,11 @@ function run(commands, idx = 0, ...inputs) {
     commands[pos] = value;
   }
 
-  for (let i = idx; i < commands.length; ) {
+  function input(value) {
+    _input = value;
+  }
+
+  function next() {
     let movePointer = true;
     const code = commands[i];
     const parsed = parseOpcode(code, i);
@@ -152,27 +160,29 @@ function run(commands, idx = 0, ...inputs) {
       case ocLessThan:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
-        dest1 = getDest(param3, i, 3);
-        setVal(dest1, val1 < val2 ? 1 : 0);
+        writeToIdx = getDest(param3, i, 3);
+        setVal(writeToIdx, val1 < val2 ? 1 : 0);
         break;
       case ocEquals:
         val1 = getVal(param1, i, 1);
         val2 = getVal(param2, i, 2);
-        dest1 = getDest(param3, i, 3);
-        setVal(dest1, val1 === val2 ? 1 : 0);
+        writeToIdx = getDest(param3, i, 3);
+        setVal(writeToIdx, val1 === val2 ? 1 : 0);
         break;
       case ocIn:
-        const input = inputs.shift();
-        if (typeof input === "undefined") {
-          return [output, i];
+        if (typeof _input === "undefined") {
+          return { value: Infinity, done: false };
         }
-        val1 = input;
-        dest1 = getDest(param1, i, 1);
-        setVal(dest1, val1);
+        writeToIdx = getDest(param1, i, 1);
+        setVal(writeToIdx, _input);
+        _input = undefined;
         break;
       case ocOut:
         output = getVal(param1, i, 1);
-        console.log(output);
+        if (movePointer) {
+          i += step;
+        }
+        return { value: output, done: false };
         break;
       case ocAdd:
         val1 = getVal(param1, i, 1);
@@ -190,7 +200,7 @@ function run(commands, idx = 0, ...inputs) {
         break;
       case ocHalt:
         // console.log("Halt!");
-        return [output, -1];
+        return { value: null, done: true };
       default:
         console.log(`Unknown operation: ${op}`);
         break;
@@ -198,7 +208,13 @@ function run(commands, idx = 0, ...inputs) {
     if (movePointer) {
       i += step;
     }
+    return { value: null, done: false };
   }
+
+  return {
+    next,
+    input
+  };
 }
 
 function permutationsWithRepetition(src = [], len = 1) {
@@ -268,6 +284,6 @@ module.exports = {
   readDataToString,
   parseOpcode,
   Op,
-  run,
+  intComp,
   permutationsWithoutRepetition
 };

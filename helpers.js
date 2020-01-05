@@ -4,8 +4,9 @@
 // const module = {};
 const fs = require("fs");
 
-function readDataToString(fileName) {
-  const input = fs.readFileSync(`./${fileName}`, { encoding: "utf-8" });
+function readDataToString(fileName, absolute = false) {
+  const fn = absolute ? fileName : `./${fileName}`;
+  const input = fs.readFileSync(fn, { encoding: "utf-8" });
 
   const data = input.toString();
   return data;

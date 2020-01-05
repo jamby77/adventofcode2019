@@ -15,11 +15,43 @@ const scan = data.split("\n").map(line => {
   };
 });
 
+/**
+ * Returns least common multiple of two numbers
+ * @param a number 1
+ * @param b number 2
+ * @return lcm(a, b)
+ */
+function lcm(a = 0, b = 0) {
+  if (a == 0 || b == 0) {
+    return 0;
+  }
+  return (a * b) / gcd(a, b);
+}
+
+/**
+ * Returns greatest common divisor of the given numbers
+ * @param a number 1
+ * @param b number 2
+ * @return gcd(a, b)
+ */
+function gcd(a = 0, b = 0) {
+  if (a < 1 || b < 1) {
+    throw new "a or b is less than 1"();
+  }
+  remainder = 0;
+  do {
+    remainder = a % b;
+    a = b;
+    b = remainder;
+  } while (b !== 0);
+  return a;
+}
+
 const absSum = ({ x, y, z }) => {
   return Math.abs(x) + Math.abs(y) + Math.abs(z);
 };
 
-function updateVelocities(scan = [], steps = 0) {
+function updateVelocities(scan = [], steps = 0, justAxis = null) {
   let idx = 0;
   const velocities = [
     { x: 0, y: 0, z: 0 },
@@ -54,11 +86,12 @@ function updateVelocities(scan = [], steps = 0) {
     if (idx >= steps) {
       break;
     }
-    if (idx % 1000000 === 0) {
+    if (idx > 0 && idx % 1000000 === 0) {
       console.log(idx);
     }
     if (idx > 0 && universeMatches()) {
       console.log(idx);
+      return idx;
       break;
     }
     scan.forEach((moon, idx) => {
@@ -67,12 +100,16 @@ function updateVelocities(scan = [], steps = 0) {
         if (pairMoon === moon) {
           continue;
         }
-        const x = getVelUpdate(moon, pairMoon, "x"),
-          y = getVelUpdate(moon, pairMoon, "y"),
-          z = getVelUpdate(moon, pairMoon, "z");
-        vel.x += x;
-        vel.y += y;
-        vel.z += z;
+        if (justAxis !== null) {
+          vel[justAxis] += getVelUpdate(moon, pairMoon, justAxis);
+        } else {
+          const x = getVelUpdate(moon, pairMoon, "x"),
+            y = getVelUpdate(moon, pairMoon, "y"),
+            z = getVelUpdate(moon, pairMoon, "z");
+          vel.x += x;
+          vel.y += y;
+          vel.z += z;
+        }
       }
     });
     scan.forEach((moon, idx) => {
@@ -120,5 +157,22 @@ const testScan2 = [
 // console.log(total, scan);
 
 // part 2
-updateVelocities(testScan1, Infinity);
-updateVelocities(testScan2, Infinity);
+const brute1 = updateVelocities(testScan1, Infinity);
+const resx = updateVelocities(testScan1, Infinity, "x");
+const resy = updateVelocities(testScan1, Infinity, "y");
+const resz = updateVelocities(testScan1, Infinity, "z");
+
+console.log(lcm(lcm(resx, resy), resz), brute1);
+// updateVelocities(testScan2, Infinity);
+
+const resx2 = updateVelocities(testScan2, Infinity, "x");
+const resy2 = updateVelocities(testScan2, Infinity, "y");
+const resz2 = updateVelocities(testScan2, Infinity, "z");
+
+console.log(lcm(lcm(resx2, resy2), resz2), 4686774924);
+
+const resx3 = updateVelocities(scan, Infinity, "x");
+const resy3 = updateVelocities(scan, Infinity, "y");
+const resz3 = updateVelocities(scan, Infinity, "z");
+
+console.log(lcm(lcm(resx3, resy3), resz3));
